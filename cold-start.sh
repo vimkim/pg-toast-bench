@@ -8,8 +8,8 @@ SERVICE=postgresql-16    # adjust if your service name differs (e.g., postgresql
 FILES=(
   "id_plain.sql"
   "id_ext.sql"
-  # "detoast_plain.sql"   # the convert_to(...) version
-  # "detoast_ext.sql"     # the convert_to(...) version
+  "detoast_plain.sql"   # the convert_to(...) version
+  "detoast_ext.sql"     # the convert_to(...) version
 )
 
 for f in "${FILES[@]}"; do
@@ -32,11 +32,11 @@ sudo systemctl restart "$SERVICE"
 sleep 1
 sudo sync
 echo 3 | sudo tee /proc/sys/vm/drop_caches > /dev/null
-psql -U "$PGUSER" "$PGDB" -f ./random_detoast_plain.sql
+psql -U "$PGUSER" "$PGDB" -v sample_n=10000 -f ./random_detoast_plain.sql
 
 echo "cold run random ext"
 sudo systemctl restart "$SERVICE"
 sleep 1
 sudo sync
 echo 3 | sudo tee /proc/sys/vm/drop_caches > /dev/null
-psql -U "$PGUSER" "$PGDB" -f ./random_detoast_ext.sql
+psql -U "$PGUSER" "$PGDB" -v sample_n=10000 -f ./random_detoast_ext.sql

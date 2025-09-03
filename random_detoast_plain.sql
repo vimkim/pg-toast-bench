@@ -8,6 +8,9 @@ SET enable_mergejoin = off;
 SET enable_indexscan = on;
 SET enable_bitmapscan = on;
 SET enable_seqscan = on;
+SET random_page_cost = 4;   -- discourage seq scans
+SET effective_io_concurrency = 1;  -- minimal readahead on spinning disk; might not matter on NVMe
+
 
 -- configurable sample size (default 50000)
 \if :{?sample_n}
