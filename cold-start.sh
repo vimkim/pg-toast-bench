@@ -1,24 +1,42 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PGUSER=vimkim        # <- change if needed
-PGDB=vimkimdb        # <- change if needed
+PGUSER=vimkim
+PGDB=vimkimdb
+SERVICE=postgresql-16    # adjust if your service name differs (e.g., postgresql-16)
 
 FILES=(
   "id_plain.sql"
   "id_ext.sql"
-  "detoast_plain.sql"
-  "detoast_ext.sql"
+  # "detoast_plain.sql"   # the convert_to(...) version
+  # "detoast_ext.sql"     # the convert_to(...) version
 )
 
-# Optional: for a *true* cold start also clear Postgres shared_buffers once
-# sudo systemctl restart postgresql
-
 for f in "${FILES[@]}"; do
-  echo "==> Running $f with OS cold cache"
-  # OS cache cold (affects whole machine; do NOT use on prod)
+  echo "==> Cold run: $f"
+  # 1) restart server to clear shared_buffers
+  sudo systemctl restart "$SERVICE"
+  # give it a moment to come up
+  sleep 1
+
+  # 2) clear OS page cache
   sudo sync
   echo 3 | sudo tee /proc/sys/vm/drop_caches > /dev/null
 
+  # 3) run in a fresh connection
   psql -U "$PGUSER" "$PGDB" -f "$f"
 done
+
+echo "cold run random plain"
+sudo systemctl restart "$SERVICE"
+sleep 1
+sudo sync
+echo 3 | sudo tee /proc/sys/vm/drop_caches > /dev/null
+psql -U "$PGUSER" "$PGDB" -f ./random_detoast_plain.sql
+
+echo "cold run random ext"
+sudo systemctl restart "$SERVICE"
+sleep 1
+sudo sync
+echo 3 | sudo tee /proc/sys/vm/drop_caches > /dev/null
+psql -U "$PGUSER" "$PGDB" -f ./random_detoast_ext.sql
